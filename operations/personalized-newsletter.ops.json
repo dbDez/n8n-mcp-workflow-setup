@@ -1,0 +1,16 @@
+{
+  "$comment": "n8n-MCP update_workflow operations for the personalized newsletter agent. Replace <YOUR_*_ID> with your own IDs from list_credentials(), then call update_workflow(workflowId, operations). Atomic and idempotent.",
+  "workflow": "personalized-newsletter",
+  "placeholders": {
+    "<YOUR_OPENROUTER_CRED_ID>": "id of your openRouterApi credential",
+    "<YOUR_GMAIL_CRED_ID>": "id of your gmailOAuth2 credential",
+    "<YOUR_TAVILY_CRED_ID>": "id of your tavilyApi credential"
+  },
+  "operations": [
+    { "type": "setNodeCredential", "nodeName": "OpenRouter Chat Model",   "credentialKey": "openRouterApi", "credentialId": "<YOUR_OPENROUTER_CRED_ID>", "credentialName": "OpenRouter account" },
+    { "type": "setNodeCredential", "nodeName": "Send a message in Gmail", "credentialKey": "gmailOAuth2",   "credentialId": "<YOUR_GMAIL_CRED_ID>",      "credentialName": "Gmail account" },
+    { "type": "setNodeCredential", "nodeName": "Search in Tavily",        "credentialKey": "tavilyApi",     "credentialId": "<YOUR_TAVILY_CRED_ID>",     "credentialName": "Tavily account" },
+
+    { "type": "setNodeParameter", "nodeName": "OpenRouter Chat Model", "path": "/model", "value": "openai/gpt-4.1-mini" }
+  ]
+}

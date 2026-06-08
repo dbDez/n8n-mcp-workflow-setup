@@ -1,0 +1,31 @@
+{
+  "$comment": "n8n-MCP update_workflow operations for the Gmail inbox classifier. Replace <YOUR_*_ID> with your own IDs from list_credentials(), then call update_workflow(workflowId, operations). The batch is atomic; the operations are idempotent (safe to re-run, and safe to apply to the original upstream course export which ships with these bugs).",
+  "workflow": "gmail-inbox-classifier",
+  "placeholders": {
+    "<YOUR_GMAIL_CRED_ID>": "id of your gmailOAuth2 credential",
+    "<YOUR_OPENROUTER_CRED_ID>": "id of your openRouterApi credential"
+  },
+  "operations": [
+    { "type": "setNodeCredential", "nodeName": "Gmail Trigger",          "credentialKey": "gmailOAuth2",   "credentialId": "<YOUR_GMAIL_CRED_ID>",      "credentialName": "Gmail account" },
+    { "type": "setNodeCredential", "nodeName": "OpenRouter Chat Model",  "credentialKey": "openRouterApi", "credentialId": "<YOUR_OPENROUTER_CRED_ID>", "credentialName": "OpenRouter account" },
+    { "type": "setNodeCredential", "nodeName": "OpenRouter Chat Model1", "credentialKey": "openRouterApi", "credentialId": "<YOUR_OPENROUTER_CRED_ID>", "credentialName": "OpenRouter account" },
+    { "type": "setNodeCredential", "nodeName": "Create a label",         "credentialKey": "gmailOAuth2",   "credentialId": "<YOUR_GMAIL_CRED_ID>",      "credentialName": "Gmail account" },
+    { "type": "setNodeCredential", "nodeName": "Add label to message",   "credentialKey": "gmailOAuth2",   "credentialId": "<YOUR_GMAIL_CRED_ID>",      "credentialName": "Gmail account" },
+    { "type": "setNodeCredential", "nodeName": "Delete a message",       "credentialKey": "gmailOAuth2",   "credentialId": "<YOUR_GMAIL_CRED_ID>",      "credentialName": "Gmail account" },
+    { "type": "setNodeCredential", "nodeName": "Create a draft",         "credentialKey": "gmailOAuth2",   "credentialId": "<YOUR_GMAIL_CRED_ID>",      "credentialName": "Gmail account" },
+    { "type": "setNodeCredential", "nodeName": "Reply to a message",     "credentialKey": "gmailOAuth2",   "credentialId": "<YOUR_GMAIL_CRED_ID>",      "credentialName": "Gmail account" },
+
+    { "type": "setNodeDisabled",  "nodeName": "Create a label", "disabled": true },
+    { "type": "setNodeParameter", "nodeName": "Add label to message", "path": "/labelIds", "value": ["IMPORTANT"] },
+    { "type": "setNodeDisabled",  "nodeName": "Delete a message", "disabled": true }
+  ],
+  "optional_reply_mode_draft_only": {
+    "$comment": "Apply this batch instead of auto-sending: AI replies land as unsent drafts in the thread.",
+    "operations": [
+      { "type": "removeConnection", "source": "AI Agent", "target": "Reply to a message", "connectionType": "main" },
+      { "type": "addConnection",    "source": "AI Agent", "target": "Create a draft",      "connectionType": "main" },
+      { "type": "setNodeDisabled",  "nodeName": "Create a draft",     "disabled": false },
+      { "type": "setNodeDisabled",  "nodeName": "Reply to a message", "disabled": true }
+    ]
+  }
+}
