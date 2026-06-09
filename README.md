@@ -81,6 +81,27 @@ images/       Screenshots of a configured workflow running and its output
 The operations in this repo are applied through the **[n8n-MCP](https://github.com/czlonkowski/n8n-mcp)**
 server (`npx n8n-mcp`), which connects Claude to your n8n instance over the n8n API.
 
+```mermaid
+flowchart TD
+    subgraph SETUP["🔌 Set up the MCP server in Claude  (one time)"]
+        A["n8n → Settings → n8n API<br/>Create an API key"] --> B["Copy the API key<br/>+ your instance URL"]
+        B --> C{"Which Claude client?"}
+        C -->|"Claude Code (CLI)"| D["claude mcp add n8n-mcp …<br/>-- npx n8n-mcp"]
+        C -->|"Claude Desktop"| E["Add n8n-mcp to<br/>claude_desktop_config.json<br/>→ restart"]
+        D --> F(["Claude connects to n8n<br/>MCP tools available"])
+        E --> F
+    end
+    subgraph USE["⚙️ Configure a workflow  (per workflow)"]
+        G["Import a workflow<br/>→ note the workflow ID"] --> H["list_credentials()<br/>→ your credential IDs"]
+        H --> I["update_workflow(id, operations)<br/>bind creds · set model · fix bugs"]
+        I --> J(["Reload n8n → Execute<br/>✅ runs green"])
+    end
+    F --> G
+
+    classDef done fill:#1f7a3d,stroke:#0f3,color:#fff;
+    class F,J done;
+```
+
 ### 1. Get an n8n API key
 
 In n8n: **Settings → n8n API → Create an API key**. Copy the key and note your instance URL
