@@ -75,6 +75,20 @@ images/       Screenshots of a configured workflow running and its output
 | [`workflows/personalized-newsletter.json`](workflows/personalized-newsletter.json) | Chat-triggered AI agent that researches a topic via Tavily web search and emails a curated newsletter through Gmail, with buffer memory. |
 | [`workflows/linkedin-scaler.json`](workflows/linkedin-scaler.json) | Two independent webhook flows. **Generate** → an AI ghostwriter (Gemini 2.5 Flash via OpenRouter) turns a topic into a viral-style post and returns it as text. **Publish** → posts approved text to LinkedIn. The Generate flow runs with just an OpenRouter key; the Publish flow needs your own LinkedIn Developer app (`w_member_social` + `openid profile`), so its author URN + credential ship blank by design. |
 
+### Each one, configured and running
+
+**Personalized newsletter** — the agent researches the topic and the email lands in the inbox (recipient details redacted):
+
+| Running in n8n | The email it sent |
+|---|---|
+| ![personalized newsletter running](images/personalized-newsletter-running.png) | ![newsletter email output](images/personalized-newsletter-output.png) |
+
+**LinkedInScaler** — the Generate flow runs green and returns a ready-to-post draft (nothing is published without your own LinkedIn app):
+
+| Generate flow running | The post it produced |
+|---|---|
+| ![linkedin scaler running](images/linkedin-scaler-running.jpg) | ![generated linkedin post](images/linkedin-scaler-output.png) |
+
 ---
 
 ## Set up the n8n-MCP server in Claude
