@@ -1,5 +1,5 @@
 {
-  "$comment": "n8n-MCP update_workflow operations for the Gmail inbox classifier. Replace <YOUR_*_ID> with your own IDs from list_credentials(), then call update_workflow(workflowId, operations). The batch is atomic; the operations are idempotent (safe to re-run, and safe to apply to the original upstream course export which ships with these bugs).",
+  "$comment": "n8n-MCP update_workflow operations for the Gmail inbox classifier. Replace <YOUR_*_ID> with your own IDs from list_credentials(), then call update_workflow(workflowId, operations). The batch is atomic; the operations are idempotent (safe to re-run, and safe to apply to a freshly-imported copy of the sample workflow).",
   "workflow": "gmail-inbox-classifier",
   "placeholders": {
     "<YOUR_GMAIL_CRED_ID>": "id of your gmailOAuth2 credential",

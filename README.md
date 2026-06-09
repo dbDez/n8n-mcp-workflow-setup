@@ -1,37 +1,57 @@
 # n8n-mcp-workflow-setup
 
-**Configure imported n8n workflows programmatically — bind credentials, pick models, and fix the
-"author's-account" landmines — entirely through the [n8n-MCP](https://github.com/czlonkowski/n8n-mcp),
-without clicking around the editor.**
+**Upload a workflow to n8n and let an MCP server configure and repair it for you — credentials, models,
+and the bugs that stop it running — with zero clicks in the editor.**
 
-When you import a community or course `*.json` workflow into your own n8n, it never just runs. The
-export carries the *original author's* credential IDs and label IDs, so every node comes in
-unauthenticated and a few nodes fail outright. The usual fix is a tedious manual pass: open every node,
-pick your credential, select a model, hunt down the broken parameters.
+When you upload a workflow into n8n, it can have inherent flaws or even bugs: credentials that don't match
+your instance, an unselected model, hard-coded IDs that point nowhere, a node that errors the moment it
+runs. You have two choices:
 
-This repo shows how to do that whole pass **as a small batch of declarative operations** an AI agent (or
-you) can replay against the n8n-MCP `update_workflow` tool. It's reproducible, diffable, and version-controlled.
+1. **Fix each non-functioning step by hand** — open every node, pick your credential, select a model,
+   hunt down the broken parameter, retest.
+2. **Wire up an MCP server and let it do the heavy lifting** — express the whole configuration once, as a
+   small batch of declarative operations, and apply them in a single call.
+
+This repo is the second option: two **sample workflows** plus the matching
+[n8n-MCP](https://github.com/czlonkowski/n8n-mcp) operation batches that configure and repair them —
+reproducible, diffable, and version-controlled.
 
 ---
 
-## Why this exists
+## It works — zero manual fixes
 
-A workflow export looks portable but isn't:
+The screenshots below were produced **after** the MCP applied its operations. No node was opened, no
+field was edited by hand in the n8n editor.
 
-1. **Credentials don't travel.** n8n never exports secrets, and the author's credential *IDs* don't exist
-   in your instance — so on import, every node loses its auth.
-2. **Hard-coded resource IDs break.** Gmail label IDs, Slack channel IDs, Notion DB IDs, etc. are
-   account-specific. The author's `Label_1` is meaningless in your account.
+**The configured workflow, running green in n8n** (credentials bound, models selected, broken nodes
+handled automatically):
+
+![n8n workflow running after MCP configuration](images/workflow-running.png)
+
+**The output it produced** — a polished, fully-automated reply, start to finish:
+
+![AI-generated reply produced by the workflow](images/ai-generated-reply.png)
+
+---
+
+## Why a fresh upload doesn't "just run"
+
+An exported `*.json` workflow looks portable, but several things don't carry across instances:
+
+1. **Credentials don't travel.** n8n never exports secrets, and the credential *IDs* baked into the export
+   don't exist in your instance — so on import every node comes in unauthenticated.
+2. **Hard-coded resource IDs break.** Gmail label IDs, Slack channel IDs, Notion DB IDs and the like are
+   account-specific; an ID from another instance is meaningless in yours.
 3. **Idempotency bugs surface on the *second* run.** e.g. a "create label" node returns
-   `409 — Label name exists` once the label is there.
-4. **Some fields ship blank.** Model pickers, in particular, often export empty.
+   `409 — Label name exists` once the label already exists.
+4. **Some fields ship blank.** Model pickers in particular often export empty.
 
-You can fix all of that by hand. Or you can express it once, like this:
+Expressed as MCP operations, the entire fix looks like this:
 
 ```jsonc
 // update_workflow(workflowId, operations)
 [
-  { "type": "setNodeCredential", "nodeName": "Gmail Trigger",  "credentialKey": "gmailOAuth2",   "credentialId": "<YOUR_GMAIL_CRED_ID>",  "credentialName": "Gmail account" },
+  { "type": "setNodeCredential", "nodeName": "Gmail Trigger",         "credentialKey": "gmailOAuth2",   "credentialId": "<YOUR_GMAIL_CRED_ID>",      "credentialName": "Gmail account" },
   { "type": "setNodeCredential", "nodeName": "OpenRouter Chat Model", "credentialKey": "openRouterApi", "credentialId": "<YOUR_OPENROUTER_CRED_ID>", "credentialName": "OpenRouter account" },
   { "type": "setNodeParameter",  "nodeName": "OpenRouter Chat Model", "path": "/model", "value": "openai/gpt-4.1-mini" },
   { "type": "setNodeDisabled",   "nodeName": "Create a label", "disabled": true },
@@ -44,8 +64,9 @@ You can fix all of that by hand. Or you can express it once, like this:
 ## What's in here
 
 ```
-workflows/    Two ready-to-import n8n workflows (credential-free templates)
+workflows/    Two sample n8n workflows (credential-free templates)
 operations/   The matching n8n-MCP update_workflow operation batches to configure each one
+images/       Screenshots of a configured workflow running and its output
 ```
 
 | Workflow | What it does |
@@ -53,28 +74,79 @@ operations/   The matching n8n-MCP update_workflow operation batches to configur
 | [`workflows/gmail-inbox-classifier.json`](workflows/gmail-inbox-classifier.json) | Polls Gmail → classifies each email (*Important / Newsletter / Subscription*) with an LLM → labels + AI-drafts a reply to important mail, routes newsletters to a cleanup branch. |
 | [`workflows/personalized-newsletter.json`](workflows/personalized-newsletter.json) | Chat-triggered AI agent that researches a topic via Tavily web search and emails a curated newsletter through Gmail, with buffer memory. |
 
-Both originate from the [Outskill AI Accelerator](https://outskill.com) Day-2 templates and are included
-here as **generic, credential-free** starting points.
+---
+
+## Set up the n8n-MCP server in Claude
+
+The operations in this repo are applied through the **[n8n-MCP](https://github.com/czlonkowski/n8n-mcp)**
+server (`npx n8n-mcp`), which connects Claude to your n8n instance over the n8n API.
+
+### 1. Get an n8n API key
+
+In n8n: **Settings → n8n API → Create an API key**. Copy the key and note your instance URL
+(e.g. `https://your-instance.app.n8n.cloud`, or `http://localhost:5678` for a local instance).
+
+### 2a. Claude Code (CLI)
+
+```bash
+claude mcp add n8n-mcp \
+  -e MCP_MODE=stdio \
+  -e LOG_LEVEL=error \
+  -e DISABLE_CONSOLE_OUTPUT=true \
+  -e N8N_API_URL=https://your-n8n-instance.com \
+  -e N8N_API_KEY=your-api-key \
+  -- npx n8n-mcp
+```
+
+On **Windows PowerShell**, quote each `-e` flag:
+
+```powershell
+claude mcp add n8n-mcp `
+  '-e MCP_MODE=stdio' `
+  '-e LOG_LEVEL=error' `
+  '-e DISABLE_CONSOLE_OUTPUT=true' `
+  '-e N8N_API_URL=https://your-n8n-instance.com' `
+  '-e N8N_API_KEY=your-api-key' `
+  -- npx n8n-mcp
+```
+
+### 2b. Claude Desktop (or any client using a config file)
+
+Open the MCP config (Claude Desktop: **Settings → Developer → Edit Config**, which opens
+`claude_desktop_config.json`) and add the server, then restart the app:
+
+```json
+{
+  "mcpServers": {
+    "n8n-mcp": {
+      "command": "npx",
+      "args": ["n8n-mcp"],
+      "env": {
+        "MCP_MODE": "stdio",
+        "LOG_LEVEL": "error",
+        "DISABLE_CONSOLE_OUTPUT": "true",
+        "N8N_API_URL": "https://your-n8n-instance.com",
+        "N8N_API_KEY": "your-api-key"
+      }
+    }
+  }
+}
+```
+
+The same `mcpServers` block works in a project-level `.mcp.json` for Claude Code. Once connected, Claude
+can call `list_credentials`, `get_workflow_details`, `update_workflow`, `get_execution`, and the rest.
+
+> Keep your API key out of source control — it lives in the MCP config / environment, never in a
+> committed file.
 
 ---
 
-## Prerequisites
+## Use it
 
-1. An n8n instance (Cloud or self-hosted).
-2. The **[n8n-MCP](https://github.com/czlonkowski/n8n-mcp)** server connected to your AI client
-   (Claude Code, Claude Desktop, Cursor, etc.). It talks to your n8n over the MCP endpoint, so it works
-   even when the public REST API is disabled on your plan.
-3. Credentials created **once** in n8n (Settings → Credentials): `gmailOAuth2`, `openRouterApi`,
-   `tavilyApi`. The MCP references credentials by ID; it never handles the secret itself.
+### 1. Import a workflow
 
----
-
-## How to use
-
-### 1. Import the workflow
-
-Either through the n8n UI (*Workflows → Import from File*) or with the MCP
-`create_workflow_from_code`. Note the resulting **workflow ID**.
+Through the n8n UI (*Workflows → Import from File*) or with the MCP `create_workflow_from_code`. Note the
+resulting **workflow ID**.
 
 ### 2. Find your credential IDs
 
@@ -114,15 +186,15 @@ workflow page, then *Execute*.
 ### Debugging a failed run
 
 `get_execution(executionId, includeData: true)` returns the failing node, the branch that was taken, and
-the raw provider error body — this is how you confirm, e.g., a `409 Label name exists or conflicts`
-instead of guessing.
+the raw provider error body — so you confirm, e.g., a `409 Label name exists or conflicts` instead of
+guessing.
 
 ---
 
 ## Worked example: the Gmail classifier
 
-The raw template fails in three documented ways; here's the complete fix as one reproducible flow — see
-[`operations/gmail-inbox-classifier.ops.json`](operations/gmail-inbox-classifier.ops.json):
+A freshly-imported copy of this workflow hits three issues; here's the complete fix as one reproducible
+flow — see [`operations/gmail-inbox-classifier.ops.json`](operations/gmail-inbox-classifier.ops.json):
 
 1. **Bind credentials** on all Gmail + OpenRouter nodes.
 2. **`409 Label name exists`** → disable the `Create a label` node (it's pass-through, so the chain holds).
@@ -130,11 +202,12 @@ The raw template fails in three documented ways; here's the complete fix as one 
 4. *(Optional reply mode)* swap `AI Agent → Reply to a message` for `AI Agent → Create a draft` to review
    replies as unsent drafts instead of auto-sending.
 
+The screenshots at the top of this README are the result: the workflow runs end-to-end and produces the
+reply, with everything configured by the MCP.
+
 ---
 
 ## License
 
-[MIT](LICENSE).
-
-Workflow templates are derived from publicly distributed course material and are provided as-is for
-educational use. The n8n-MCP project is © its respective authors.
+[MIT](LICENSE). The sample workflow templates are provided as-is for educational use. The n8n-MCP project
+is © its respective authors.
