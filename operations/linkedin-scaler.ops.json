@@ -1,0 +1,23 @@
+{
+  "$comment": "n8n-MCP update_workflow operations for the LinkedInScaler workflow. Replace <YOUR_*> placeholders with your own values, then call update_workflow(workflowId, operations). Atomic and idempotent. The Generate flow needs only the OpenRouter credential; the Publish flow additionally needs a LinkedIn credential backed by your own LinkedIn Developer app.",
+  "workflow": "linkedin-scaler",
+  "placeholders": {
+    "<YOUR_OPENROUTER_CRED_ID>": "id of your openRouterApi credential (from list_credentials)",
+    "<YOUR_LINKEDIN_CRED_ID>": "id of your linkedInOAuth2Api credential (Publish flow only)",
+    "<YOUR_MEMBER_URN>": "your LinkedIn author URN, e.g. urn:li:person:XXXXXXXX (Publish flow only)"
+  },
+  "operations": {
+    "generate_flow_required": [
+      { "type": "setNodeCredential", "nodeName": "Gemini 2.5 Flash (OpenRouter)", "credentialKey": "openRouterApi", "credentialId": "<YOUR_OPENROUTER_CRED_ID>", "credentialName": "OpenRouter account" }
+    ],
+    "publish_flow_optional": [
+      { "type": "setNodeCredential", "nodeName": "LinkedIn - Create Post", "credentialKey": "linkedInOAuth2Api", "credentialId": "<YOUR_LINKEDIN_CRED_ID>", "credentialName": "LinkedIn account" },
+      { "type": "setNodeParameter",  "nodeName": "LinkedIn - Create Post", "path": "/person", "value": "<YOUR_MEMBER_URN>" }
+    ]
+  },
+  "notes": [
+    "The two flows are independent webhooks. The Generate flow (POST /webhook/linkedinscaler-generate) runs with just the OpenRouter credential and returns a ready-to-post LinkedIn post as text.",
+    "The Publish flow (POST /webhook/linkedinscaler-publish) requires a LinkedIn Developer app (https://www.linkedin.com/developers/apps/new) with the w_member_social and openid profile scopes, plus an authorised linkedInOAuth2Api credential. Until you have that, the template's 'LinkedIn - Create Post' node is intentionally left with an empty author URN and no credential.",
+    "update_workflow is atomic — apply each array in its own call, or merge them, but a single failed op rolls back the whole batch."
+  ]
+}

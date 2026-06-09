@@ -1,0 +1,178 @@
+{
+  "name": "LinkedInScaler",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "linkedinscaler-generate",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "d0f06be9-f51a-41e2-aabd-4a0b7f714265",
+      "name": "Generate Post Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [240, 208],
+      "webhookId": "05e23701-d2bb-4e5a-8c90-07275eeadc14"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "in-topic", "name": "topic", "value": "={{ $json.body?.topic ?? $json.topic ?? \"\" }}", "type": "string" },
+            { "id": "in-style", "name": "writing_style", "value": "={{ $json.body?.writing_style ?? $json.writing_style ?? \"Professional\" }}", "type": "string" },
+            { "id": "in-category", "name": "post_category", "value": "={{ $json.body?.post_category ?? $json.post_category ?? \"Thought Leadership\" }}", "type": "string" },
+            { "id": "in-length", "name": "post_length", "value": "={{ $json.body?.post_length ?? $json.post_length ?? \"Medium\" }}", "type": "string" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8d3cf0bd-ece6-4632-996f-0b6a122c0320",
+      "name": "Normalize Inputs",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [464, 208]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Generate a LinkedIn post with these details:\n\nTopic / Theme: {{ $json.topic }}\nWriting Style: {{ $json.writing_style }}\nPost Category: {{ $json.post_category }}\nPost Length: {{ $json.post_length }}",
+        "options": {
+          "systemMessage": "Persona:\nYou are an expert LinkedIn Ghostwriter who has written 2,000+ viral posts for CEOs, founders, creators, and tech professionals. You deeply understand LinkedIn algorithms, storytelling, hooks, audience psychology, and content formats that drive millions of views. You specialise in creating scroll-stopping hooks, emotional storytelling, authority-building insights, and CTAs that spark engagement.\n\nTask:\nCreate a viral-style LinkedIn post based on the topic, writing style, post category, and post length provided in the user message.\n\nDo not use \"#\" or \"*\" for headers or anywhere in the post. Do not use em-dashes.\n\nYour job is to craft a LinkedIn post that maximizes reach, engagement, and shares through strong hooks, relatable narratives, crisp formatting, and powerful CTAs.\n\nContext:\nThe post should feel like it was written by a top LinkedIn creator. It must capture attention in the first 2-3 seconds, use pattern-interrupt techniques, create emotional resonance, and deliver real value. Add insights, examples, frameworks, or micro-stories depending on the post type. The goal is to trigger comments, saves, and reposts.\n\nFormat:\nFollow this exact structure:\nHook (1-2 lines, punchy, curiosity-building, scroll-stopping)\nBody (story, insight, or breakdown depending on the post type)\nValue Section (actionable takeaways, lessons, or frameworks)\nCTA (ask a question that encourages comments, or invite people to share their thoughts)\n\nKeep paragraphs short (1-2 lines max).\nUse simple English, no jargon.\nAdd spacing for readability.\nDo not use \"#\" or \"*\" for headers.\nRespect the requested post length (Short, Medium, or Large).\nAdd a few hashtags related to the topic, maximum 4 or 5.\n\nTone:\nConversational, bold, authoritative, and engaging, like top LinkedIn creators. No fluff. Every line should deliver value, emotion, or curiosity.\n\nOutput:\nReturn only the polished viral-style LinkedIn post, ready to publish. Do not include any preamble, explanation, or surrounding quotes."
+        }
+      },
+      "id": "06ac45a3-f4bb-4385-b81c-51d0e344d933",
+      "name": "LinkedIn Ghostwriter",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [688, 208]
+    },
+    {
+      "parameters": {
+        "model": "google/gemini-2.5-flash",
+        "options": { "temperature": 0.8 }
+      },
+      "id": "5dba5198-3dd4-4a29-a64d-72727ac11d13",
+      "name": "Gemini 2.5 Flash (OpenRouter)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [688, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.output }}",
+        "options": {}
+      },
+      "id": "058b2b52-a2ac-4c8d-9c44-e32548d097f7",
+      "name": "Respond With Post Text",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [1088, 208]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "linkedinscaler-publish",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "8f0fc66c-5f04-49bf-b309-844915bdf22a",
+      "name": "Publish Post Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [240, 560],
+      "webhookId": "941b41df-a432-43de-84d4-c902fe218aa2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "pub-text", "name": "text", "value": "={{ $json.body?.text ?? $json.text ?? $json.body?.post ?? $json.post ?? \"\" }}", "type": "string" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "9f92cb6b-2e6c-4ee4-b2fc-38ff12fb106c",
+      "name": "Normalize Post Text",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [464, 560]
+    },
+    {
+      "parameters": {
+        "person": "",
+        "text": "={{ $json.text }}",
+        "additionalFields": { "visibility": "PUBLIC" }
+      },
+      "id": "96fac2b5-520d-4ff5-900d-ece0e3d718b8",
+      "name": "LinkedIn - Create Post",
+      "type": "n8n-nodes-base.linkedIn",
+      "typeVersion": 1,
+      "position": [688, 560]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"status\": \"published\", \"postUrn\": $json.urn } }}",
+        "options": {}
+      },
+      "id": "c9b12aa0-b281-47c4-bd53-ed27d8902fbd",
+      "name": "Respond Published",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [928, 560]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "clean-output", "name": "output", "type": "string", "value": "={{ $json.output.replaceAll('*', '').replaceAll('#### ', '').replaceAll('### ', '').replaceAll('## ', '').replaceAll('# ', '').trim() }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6cf6b222-cae5-4a54-bafc-3be4d9bcc127",
+      "name": "Clean Output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [864, 208]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Generate Post Webhook": {
+      "main": [[{ "node": "Normalize Inputs", "type": "main", "index": 0 }]]
+    },
+    "Normalize Inputs": {
+      "main": [[{ "node": "LinkedIn Ghostwriter", "type": "main", "index": 0 }]]
+    },
+    "Gemini 2.5 Flash (OpenRouter)": {
+      "ai_languageModel": [[{ "node": "LinkedIn Ghostwriter", "type": "ai_languageModel", "index": 0 }]]
+    },
+    "LinkedIn Ghostwriter": {
+      "main": [[{ "node": "Clean Output", "type": "main", "index": 0 }]]
+    },
+    "Clean Output": {
+      "main": [[{ "node": "Respond With Post Text", "type": "main", "index": 0 }]]
+    },
+    "Publish Post Webhook": {
+      "main": [[{ "node": "Normalize Post Text", "type": "main", "index": 0 }]]
+    },
+    "Normalize Post Text": {
+      "main": [[{ "node": "LinkedIn - Create Post", "type": "main", "index": 0 }]]
+    },
+    "LinkedIn - Create Post": {
+      "main": [[{ "node": "Respond Published", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

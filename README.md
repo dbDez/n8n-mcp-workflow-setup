@@ -12,7 +12,7 @@ runs. You have two choices:
 2. **Wire up an MCP server and let it do the heavy lifting** — express the whole configuration once, as a
    small batch of declarative operations, and apply them in a single call.
 
-This repo is the second option: two **sample workflows** plus the matching
+This repo is the second option: three **sample workflows** plus the matching
 [n8n-MCP](https://github.com/czlonkowski/n8n-mcp) operation batches that configure and repair them —
 reproducible, diffable, and version-controlled.
 
@@ -64,7 +64,7 @@ Expressed as MCP operations, the entire fix looks like this:
 ## What's in here
 
 ```
-workflows/    Two sample n8n workflows (credential-free templates)
+workflows/    Three sample n8n workflows (credential-free templates)
 operations/   The matching n8n-MCP update_workflow operation batches to configure each one
 images/       Screenshots of a configured workflow running and its output
 ```
@@ -73,6 +73,7 @@ images/       Screenshots of a configured workflow running and its output
 |---|---|
 | [`workflows/gmail-inbox-classifier.json`](workflows/gmail-inbox-classifier.json) | Polls Gmail → classifies each email (*Important / Newsletter / Subscription*) with an LLM → labels + AI-drafts a reply to important mail, routes newsletters to a cleanup branch. |
 | [`workflows/personalized-newsletter.json`](workflows/personalized-newsletter.json) | Chat-triggered AI agent that researches a topic via Tavily web search and emails a curated newsletter through Gmail, with buffer memory. |
+| [`workflows/linkedin-scaler.json`](workflows/linkedin-scaler.json) | Two independent webhook flows. **Generate** → an AI ghostwriter (Gemini 2.5 Flash via OpenRouter) turns a topic into a viral-style post and returns it as text. **Publish** → posts approved text to LinkedIn. The Generate flow runs with just an OpenRouter key; the Publish flow needs your own LinkedIn Developer app (`w_member_social` + `openid profile`), so its author URN + credential ship blank by design. |
 
 ---
 
